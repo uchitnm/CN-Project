@@ -9,19 +9,19 @@ for i, server_socket in enumerate(server_sockets):
     server_socket.bind((ip, port[i]))
     server_socket.listen()
 
-players = {"Lobby1": dict(), "Lobby2": dict(), "Lobby3": dict(), "Lobby4": dict()}
+
 
 class ServerConnect:
     def __init__(self, server):
         self.server = server
-        self.nicknames = []
-        self.clients = []
+
+        self.clients = {}
 
     def broadcast(self, message):
         for client in self.clients:
             client.send(message)
 
-    def handle(self, client, nickname):
+    def handle(self, client):
         while True:
             try:
                 message = client.recv(1024)
@@ -29,12 +29,9 @@ class ServerConnect:
 
             except socket.error:
                 if client in self.clients:
-                    index = self.clients.index(client)
-                    self.clients.remove(client)
-                    client.close()
-                    self.broadcast(f'{nickname} left the Chat!'.encode('ascii'))
-                    self.nicknames.remove(nickname)
-                    break
+                        self.broadcast(f'{self.clients[client]["nickname"]} left the Chat!'.encode('ascii'),client)
+                        del self.clients[client]
+                        break
 
     def receive(self):
         while True:
@@ -42,12 +39,14 @@ class ServerConnect:
             print(f"Connected with {str(address)}")
             client.send('NICK'.encode('ascii'))
             nickname = client.recv(1024).decode('ascii')
-            self.nicknames.append(nickname)
+
+            self.clients[client] = {"nickname" : nickname }
+            
             print(f'Nickname of the client is {nickname}')
             self.broadcast(f'{nickname} joined the Chat'.encode('ascii'))
             client.send('Connected to the Server!'.encode('ascii'))
-            self.clients.append(client)
-            thread = threading.Thread(target=self.handle, args=(client, nickname))
+
+            thread = threading.Thread(target=self.handle, args=(client,))
             thread.start()
 
 print('Server is Listening ...')

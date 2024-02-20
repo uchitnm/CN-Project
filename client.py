@@ -11,13 +11,11 @@ def enter_server():
     print("Rooms Avaliable: ")
     for servers in data:
         print(servers, end=" ")
-    # Ask user for the name of the server to join
 
     server_name = input("\nEnter the server name:")
     global nickname
     nickname = input("Choose Your Nickname:")
 
-    # Store the ip and port number for connection
     ip = data[server_name]["ip"]
     port = data[server_name]["port"]
     
@@ -27,9 +25,8 @@ def enter_server():
     client.connect((ip, port))
 
 
-# Menu loop, it will loop until the user choose to enter a server
-while True:
 
+while True:
     enter_server()
     break
 
@@ -59,9 +56,8 @@ def write():
     while True:
         if stop_thread:
             break
-        # Getting Messages
-        message = f'{nickname}: {input("")}'
 
+        message = f'{nickname}: {input("")}'
         client.send(message.encode('ascii'))
 
 
