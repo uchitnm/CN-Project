@@ -1,6 +1,8 @@
 import threading
 import socket
 import random
+import colors
+
 ip = "127.0.0.1"
 port = [49153,49154,49155,49156]
 server_sockets = [socket.socket(socket.AF_INET, socket.SOCK_STREAM) for i in range(4)]
@@ -18,12 +20,48 @@ class ServerConnect:
         self.numbers=["A","2","3","4","5","6","7","8","9","10","J","Q","K"]
         self.count=0
         self.started=False
+
     def startgame(self):
+        dealer = {"nickname" : "dealer" , "cards" : [] , "score" : 0}
+
+
         deck=random.shuffle([(a, b) for a in self.shapes for b in self.numbers]) 
+
+
+
         for j in range(2): 
+            dealer["cards"].append(deck.pop())
             for i in self.clients:
                 self.clients[i]["cards"].append(deck.pop())
-        while True:
+                
+        for i in self.clients:
+            for card_val in self.clients[i]["cards"]:
+                if card_val[1] in "2345678910":
+                    self.clients[i]["score"] += int(card_val[1])
+                elif card_val[1] == "A":
+                    if self.clients[i]["score"] >= 11:
+                        self.clients[i]["score"] += 1
+                    else:
+                        self.clients[i]["score"] += 11
+                else:
+                    self.clients[i]["score"] += 10
+        
+
+        dealer_cards = dealer["cards"]
+        if dealer_cards[1][1] in "2345678910":
+            dealer["score"] += int(card_val[1])
+        elif dealer_cards[1][1] == "A":
+            dealer["score"] += 11
+        else:
+            dealer["score"] += 10
+
+        self.broadcast(f'{dealer["nickname"]} have [ (X), {dealer["cards"][1]} ] Cards, Has score of {dealer["score"]}')
+
+        for i in self.clients:
+            self.broadcast(f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}')
+
+                
+        # while True:
             
     def broadcast(self, message):
         for client in self.clients:
@@ -33,7 +71,8 @@ class ServerConnect:
         while True:
             try:
                 message = client.recv(1024)
-                if f"{self.clients[client]["nickname"]}: /start"==message.decode("ascii"):
+                print(self.clients)
+                if f'{self.clients[client]["nickname"]}: /start' == message.decode("ascii"):
                     self.broadcast(f"{self.clients[client]["nickname"]} is ready to play!".encode('ascii'))
                     self.count+=1
                     if self.count==len(self.clients):
@@ -77,8 +116,8 @@ class ServerConnect:
 
             print(f"Connected with {str(address)}")
             
-            self.clients[client]= { "nickname " : nickname , "cards" : [] , "score" : 0}
-            
+            self.clients[client] = { "nickname" : nickname , "cards" : [] , "score" : 0 }
+            print(self.clients)
             print(f'Nickname of the client is {nickname}')
             self.broadcast(f'{nickname} joined the Chat'.encode('ascii'))
 
