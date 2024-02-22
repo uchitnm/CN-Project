@@ -44,7 +44,9 @@ def receive():
             break
         try:
             message = client.recv(1024).decode('ascii')
-            
+            if message=="Games has started. Try joining another room or wait till game is finished":
+                print(message)
+                raise socket.error
             if message == "Room Full":
                 print(message)
                 raise socket.error
