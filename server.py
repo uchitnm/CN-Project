@@ -16,24 +16,19 @@ class ServerConnect:
     def __init__(self, server):
         self.server = server
         self.clients = {}
-        self.shapes=["♣","♦","♥","♠"]
+        self.shapes=["♠","♦","♣","♥"]
         self.numbers=["A","2","3","4","5","6","7","8","9","10","J","Q","K"]
         self.count=0
         self.started=False
 
     def startgame(self):
         dealer = {"nickname" : "dealer" , "cards" : [] , "score" : 0}
-
-
-        deck=random.shuffle([(a, b) for a in self.shapes for b in self.numbers]) 
-
-
-
+        deck=[(a, b) for a in self.shapes for b in self.numbers]
+        random.shuffle(deck)
         for j in range(2): 
             dealer["cards"].append(deck.pop())
             for i in self.clients:
-                self.clients[i]["cards"].append(deck.pop())
-                
+                self.clients[i]["cards"].append(deck.pop())              
         for i in self.clients:
             for card_val in self.clients[i]["cards"]:
                 if card_val[1] in "2345678910":
@@ -45,22 +40,16 @@ class ServerConnect:
                         self.clients[i]["score"] += 11
                 else:
                     self.clients[i]["score"] += 10
-        
-
         dealer_cards = dealer["cards"]
         if dealer_cards[1][1] in "2345678910":
-            dealer["score"] += int(card_val[1])
+            dealer["score"] += int(dealer_cards[1][1])
         elif dealer_cards[1][1] == "A":
             dealer["score"] += 11
         else:
             dealer["score"] += 10
-
-        self.broadcast(f'{dealer["nickname"]} have [ (X), {dealer["cards"][1]} ] Cards, Has score of {dealer["score"]}')
-
+        self.broadcast(f'{dealer["nickname"]} have [ (X), {dealer["cards"][1]} ] Cards, Has score of {dealer["score"]}'.encode())
         for i in self.clients:
-            self.broadcast(f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}')
-
-                
+            self.broadcast(f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'.encode())
         # while True:
             
     def broadcast(self, message):
@@ -73,12 +62,12 @@ class ServerConnect:
                 message = client.recv(1024)
                 print(self.clients)
                 if f'{self.clients[client]["nickname"]}: /start' == message.decode("ascii"):
-                    self.broadcast(f"{self.clients[client]["nickname"]} is ready to play!".encode('ascii'))
+                    self.broadcast(f'{self.clients[client]["nickname"]} is ready to play!'.encode('ascii'))
                     self.count+=1
                     if self.count==len(self.clients):
                         self.broadcast(f"Starting Game!!".encode('ascii'))
                         self.started=True
-                        #startGame()
+                        self.startgame()
                     continue
                 if "/leave" in message.decode("ascii") :
                         self.broadcast(f'{self.clients[client]["nickname"]} left the Chat!'.encode('ascii'))

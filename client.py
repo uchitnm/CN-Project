@@ -43,7 +43,7 @@ def receive():
         if stop_thread:
             break
         try:
-            message = client.recv(1024).decode('ascii')
+            message = client.recv(1024).decode()
             if message=="Games has started. Try joining another room or wait till game is finished":
                 print(message)
                 raise socket.error
