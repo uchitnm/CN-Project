@@ -84,9 +84,11 @@ class ServerConnect:
         
     def stand_card(self,client):
             self.clients[client]["status"] = False
-
-            if not(all([self.clients[i]["status"] for i in self.clients])):
-
+            flag=True
+            for i in self.clients:
+                 if self.clients[i]["status"]:
+                      flag=False
+            if flag:
                 while True:
                     self.dealer["cards"].append(self.deck.pop())
                     self.dealer["score"] = 0
@@ -124,10 +126,6 @@ class ServerConnect:
                     self.started = False
                     break
 
-                            
-
-
-
     def broadcast(self, message):
         for client in self.clients:
             client.send(message)
@@ -136,7 +134,6 @@ class ServerConnect:
         while True:
             try:
                 message = client.recv(1024)
-                print(self.clients)
                 if f'{self.clients[client]["nickname"]}: /start' == message.decode("ascii"):
                     self.broadcast(f'{self.clients[client]["nickname"]} is ready to play!'.encode('ascii'))
                     self.count+=1
