@@ -64,9 +64,14 @@ class ServerConnect:
         self.broadcast(f" Hit OR Stand : ".encode())
 
             
+    def display_Score(self):
+        self.broadcast(f'{self.dealer["nickname"]} have [ (X), {self.dealer["cards"][1]} ] Cards, Has score of {self.dealer["score"]}'.encode())
+        for i in self.clients:
+            self.broadcast(f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'.encode())
 
 
     def hit_card(self,client):
+                
                 self.clients[client]["cards"].append(self.deck.pop())
                 self.clients[client]["score"] = 0 
                 for card_val in sorted(self.clients[client]["cards"], key = lambda x : func(x)):
@@ -81,15 +86,32 @@ class ServerConnect:
                         self.clients[client]["score"] += 10
 
                 if self.clients[client]["score"] > 21:
+                    self.another_thing +=1
                     self.clients[client]["status"] = False
                     self.broadcast(f'{self.clients[client]["nickname"]} is Busted.\n'.encode())
 
                 if self.clients[client]["score"] == 21:
+                    self.another_thing +=1
                     self.clients[client]["status"] = False
                     self.broadcast(f'{self.clients[client]["nickname"]} Won.\n'.encode())
 
+                self.display_Score()
+
+                if self.another_thing > self.count:
+                    self.stand_card(client)
+
+    def reset_vales(self):
+        self.started = False
+        self.count = 0
+
+        for i in self.clients:
+            self.clients[i]["score"] = 0
+            self.clients[i]["cards"] = []
+            self.clients[i]["status"] = True
         
+
     def stand_card(self,client):
+            self.another_thing +=1
             self.clients[client]["status"] = False
             flag=True
             for i in self.clients:
@@ -123,14 +145,15 @@ class ServerConnect:
                         if self.dealer["score"]  >  17:
                              break
                     
-                        
+                    self.display_Score()
                     for player in self.clients:
                                 if self.clients[player]["score"] > self.dealer["score"] and self.clients[player]["score"] <= 21:
                                     self.broadcast(f'{self.clients[player]["nickname"]} Won!\n'.encode())
                                 else:
                                     self.broadcast(f'{self.clients[player]["nickname"]} Lost.\n'.encode())
 
-                    self.started = False
+
+                    self.reset_vales()
                     break
 
                             
@@ -141,7 +164,8 @@ Hi, Just here are the commands you need to know
     2) /stand -> To stand
     3) /start -> To notify you are ready for the game
     4) /leave -> To exit the game.
-    5) /help  -> Get to know your commands
+    5) /reset -> To restart/ reset the game
+    6) /help  -> Get to know your commands
     """
         client.send(message.encode("ascii"))
 
@@ -154,7 +178,7 @@ Hi, Just here are the commands you need to know
         while True:
             try:
                 message = client.recv(1024)
-                if f'{self.clients[client]["nickname"]}: /start' == message.decode("ascii"):
+                if (f'{self.clients[client]["nickname"]}: /start' == message.decode("ascii")) or (f'{self.clients[client]["nickname"]}: /reset' == message.decode("ascii")):
                     self.broadcast(f'{self.clients[client]["nickname"]} is ready to play!'.encode('ascii'))
                     self.count+=1
                     self.clients[client]["turn_no"] = self.count
@@ -169,7 +193,7 @@ Hi, Just here are the commands you need to know
                         self.hit_card(client)
                         continue
                     else:
-                        client.send("Hold on It's not you turn yet.!!\n")
+                        client.send("Hold on It's not you turn yet.!!\n".encode("ascii"))
                 
                 if f'{self.clients[client]["nickname"]}: /stand' == message.decode("ascii"):
 
@@ -177,7 +201,7 @@ Hi, Just here are the commands you need to know
                         self.stand_card(client)
                         continue
                     else:
-                        client.send("Hold on It's not you turn yet.!!\n")
+                        client.send("Hold on It's not you turn yet.!!\n".encode("ascii"))
 
 
                 if "/leave" in message.decode("ascii") :
