@@ -25,6 +25,7 @@ class ServerConnect:
         self.started=False
         self.dealer={}
         self.deck = []
+        self.another_thing = None
 
     def startgame(self):
         self.dealer = {"nickname" : "dealer" , "cards" : [] , "score" : 0 , "status" : False}
@@ -55,7 +56,13 @@ class ServerConnect:
         self.broadcast(f'{self.dealer["nickname"]} have [ (X), {self.dealer["cards"][1]} ] Cards, Has score of {self.dealer["score"]}'.encode())
         for i in self.clients:
             self.broadcast(f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'.encode())
-        # while True:
+        
+        self.another_thing = 1 
+
+
+
+        self.broadcast(f" Hit OR Stand : ".encode())
+
             
 
 
@@ -125,7 +132,16 @@ class ServerConnect:
                     break
 
                             
-
+    def help(self,client):
+        message = """\n
+Hi, Just here are the commands you need to know
+    1) /hit   -> To hit 
+    2) /stand -> To stand
+    3) /start -> To notify you are ready for the game
+    4) /leave -> To exit the game.
+    5) /help  -> Get to know your commands
+    """
+        client.send(message.encode("ascii"))
 
 
     def broadcast(self, message):
@@ -140,22 +156,35 @@ class ServerConnect:
                 if f'{self.clients[client]["nickname"]}: /start' == message.decode("ascii"):
                     self.broadcast(f'{self.clients[client]["nickname"]} is ready to play!'.encode('ascii'))
                     self.count+=1
+                    self.clients[client]["turn_no"] = self.count
+                    
                     if self.count==len(self.clients):
                         self.broadcast(f"Starting Game!!".encode('ascii'))
                         self.started=True
                         self.startgame()
                     continue
                 if f'{self.clients[client]["nickname"]}: /hit' == message.decode("ascii"):
-                     self.hit_card(client)
-                     continue
+                    if  self.clients[client]["turn_no"] == self.another_thing:
+                        self.hit_card(client)
+                        continue
+                    else:
+                        client.send("Hold on It's not you turn yet.!!\n")
+                
                 if f'{self.clients[client]["nickname"]}: /stand' == message.decode("ascii"):
-                     self.stand_card(client)
-                     continue
+
+                    if  self.clients[client]["turn_no"] == self.another_thing:
+                        self.stand_card(client)
+                        continue
+                    else:
+                        client.send("Hold on It's not you turn yet.!!\n")
+
+
                 if "/leave" in message.decode("ascii") :
                         self.broadcast(f'{self.clients[client]["nickname"]} left the Chat!'.encode('ascii'))
                         print(f'{self.clients[client]["nickname"]} left the Chat!')
                         del self.clients[client]
-                        break
+                        self.count -= 1
+                        # break
                 self.broadcast(message)  
 
             except socket.error:
@@ -187,12 +216,14 @@ class ServerConnect:
 
             print(f"Connected with {str(address)}")
             
-            self.clients[client] = { "nickname" : nickname , "cards" : [] , "score" : 0 , "status" : True }
+            self.clients[client] = { "nickname" : nickname , "cards" : [] , "score" : 0 , "status" : True , "turn_no" : None }
             print(self.clients)
             print(f'Nickname of the client is {nickname}')
             self.broadcast(f'{nickname} joined the Chat'.encode('ascii'))
 
-            client.send(f'Connected to the Server!, {len(self.clients)} are in the room.'.encode('ascii'))
+            client.send(f'Connected to the Server!, {len(self.clients)} player(s) is/are in the room.'.encode('ascii'))
+            self.help(client)
+
 
             thread = threading.Thread(target=self.handle, args=(client,))
             thread.start()
