@@ -11,7 +11,10 @@ for i, server_socket in enumerate(server_sockets):
     server_socket.bind((ip, port[i]))
     server_socket.listen()
 
-
+def func(i):
+        if i[1] == "A":
+                return "Z"
+        return i[1]
 class ServerConnect:
     def __init__(self, server):
         self.server = server
@@ -20,15 +23,17 @@ class ServerConnect:
         self.numbers=["A","2","3","4","5","6","7","8","9","10","J","Q","K"]
         self.count=0
         self.started=False
+        self.dealer={}
+        self.deck = []
 
     def startgame(self):
-        dealer = {"nickname" : "dealer" , "cards" : [] , "score" : 0}
-        deck=[(a, b) for a in self.shapes for b in self.numbers]
-        random.shuffle(deck)
+        self.dealer = {"nickname" : "dealer" , "cards" : [] , "score" : 0 , "status" : False}
+        self.deck=[(a, b) for a in self.shapes for b in self.numbers]
+        random.shuffle(self.deck)
         for j in range(2): 
-            dealer["cards"].append(deck.pop())
+            self.dealer["cards"].append(self.deck.pop())
             for i in self.clients:
-                self.clients[i]["cards"].append(deck.pop())              
+                self.clients[i]["cards"].append(self.deck.pop())              
         for i in self.clients:
             for card_val in self.clients[i]["cards"]:
                 if card_val[1] in "2345678910":
@@ -40,18 +45,89 @@ class ServerConnect:
                         self.clients[i]["score"] += 11
                 else:
                     self.clients[i]["score"] += 10
-        dealer_cards = dealer["cards"]
+        dealer_cards = self.dealer["cards"]
         if dealer_cards[1][1] in "2345678910":
-            dealer["score"] += int(dealer_cards[1][1])
+            self.dealer["score"] += int(dealer_cards[1][1])
         elif dealer_cards[1][1] == "A":
-            dealer["score"] += 11
+            self.dealer["score"] += 11
         else:
-            dealer["score"] += 10
-        self.broadcast(f'{dealer["nickname"]} have [ (X), {dealer["cards"][1]} ] Cards, Has score of {dealer["score"]}'.encode())
+            self.dealer["score"] += 10
+        self.broadcast(f'{self.dealer["nickname"]} have [ (X), {self.dealer["cards"][1]} ] Cards, Has score of {self.dealer["score"]}'.encode())
         for i in self.clients:
             self.broadcast(f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'.encode())
         # while True:
             
+
+
+    def hit_card(self,client):
+                self.clients[client]["cards"].append(self.deck.pop())
+                self.clients[client]["score"] = 0 
+                for card_val in sorted(self.clients[client]["cards"], key = lambda x : func(x)):
+                    if card_val[1] in "2345678910":
+                        self.clients[client]["score"] += int(card_val[1])
+                    elif card_val[1] == "A":
+                        if self.clients[client]["score"] >= 11:
+                            self.clients[client]["score"] += 1
+                        else:
+                            self.clients[client]["score"] += 11
+                    else:
+                        self.clients[client]["score"] += 10
+
+                if self.clients[client]["score"] > 21:
+                    self.clients[client]["status"] = False
+                    self.broadcast(f'{self.clients[client]["nickname"]} is Busted.\n'.encode())
+
+                if self.clients[client]["score"] == 21:
+                    self.clients[client]["status"] = False
+                    self.broadcast(f'{self.clients[client]["nickname"]} Won.\n'.encode())
+
+        
+    def stand_card(self,client):
+            self.clients[client]["status"] = False
+
+            if not(all([self.clients[i]["status"] for i in self.clients])):
+
+                while True:
+                    self.dealer["cards"].append(self.deck.pop())
+                    self.dealer["score"] = 0
+                    dealer_cards = sorted(self.dealer["cards"], key = lambda x : func(x))
+                    for i in dealer_cards:
+                        if i[1] in "2345678910":
+                            self.dealer["score"] += int(i[1])
+                        elif i[1] == "A":
+                            self.dealer["score"] += 11
+                        else:
+                            self.dealer["score"] += 10
+
+                        if self.dealer["score"] > 21:
+                            self.dealer["score"] = 0
+                            self.dealer["status"] = False
+                            self.broadcast(f' Dealer is Busted.\n'.encode())
+                            break
+
+                        if self.dealer["score"] == 21:
+                            self.dealer["status"] = False
+                            self.broadcast(f'You Lost.'.encode())
+                            self.broadcast(f'Dealer Won.\n'.encode())
+                            break
+                    
+                        if self.dealer["score"]  >  17:
+                             break
+                    
+                        
+                    for player in self.clients:
+                                if self.clients[player]["score"] > self.dealer["score"] and self.clients[player]["score"] <= 21:
+                                    self.broadcast(f'{self.clients[player]["nickname"]} Won!\n'.encode())
+                                else:
+                                    self.broadcast(f'{self.clients[player]["nickname"]} Lost.\n'.encode())
+
+                    self.started = False
+                    break
+
+                            
+
+
+
     def broadcast(self, message):
         for client in self.clients:
             client.send(message)
@@ -69,6 +145,12 @@ class ServerConnect:
                         self.started=True
                         self.startgame()
                     continue
+                if f'{self.clients[client]["nickname"]}: /hit' == message.decode("ascii"):
+                     self.hit_card(client)
+                     continue
+                if f'{self.clients[client]["nickname"]}: /stand' == message.decode("ascii"):
+                     self.stand_card(client)
+                     continue
                 if "/leave" in message.decode("ascii") :
                         self.broadcast(f'{self.clients[client]["nickname"]} left the Chat!'.encode('ascii'))
                         print(f'{self.clients[client]["nickname"]} left the Chat!')
@@ -105,7 +187,7 @@ class ServerConnect:
 
             print(f"Connected with {str(address)}")
             
-            self.clients[client] = { "nickname" : nickname , "cards" : [] , "score" : 0 }
+            self.clients[client] = { "nickname" : nickname , "cards" : [] , "score" : 0 , "status" : True }
             print(self.clients)
             print(f'Nickname of the client is {nickname}')
             self.broadcast(f'{nickname} joined the Chat'.encode('ascii'))
