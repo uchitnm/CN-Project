@@ -1,7 +1,7 @@
 import threading
 import socket
 import random
-import colors
+import colors as c
 
 ip = "127.0.0.1"
 port = [49153,49154,49155,49156]
@@ -53,21 +53,21 @@ class ServerConnect:
             self.dealer["score"] += 11
         else:
             self.dealer["score"] += 10
-        self.broadcast(f'{self.dealer["nickname"]} have [ (X), {self.dealer["cards"][1]} ] Cards, Has score of {self.dealer["score"]}'.encode())
+        self.broadcast(c.cl+c.b+'{self.dealer["nickname"]} have [ (X), {self.dealer["cards"][1]} ] Cards, Has score of {self.dealer["score"]}'+c.x.encode())
         for i in self.clients:
-            self.broadcast(f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'.encode())
+            self.broadcast(f'c.cl+c.b+{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\nc+x'.encode())
         
         self.another_thing = 1 
 
 
 
-        self.broadcast(f" Hit OR Stand : ".encode())
+        self.broadcast(c.cl+c.y+f" Hit OR Stand : "+c.x.encode())
 
             
     def display_Score(self):
-        self.broadcast(f'{self.dealer["nickname"]} have [ (X), {self.dealer["cards"][1]} ] Cards, Has score of {self.dealer["score"]}'.encode())
+        self.broadcast(c.cl+c.y+f'{self.dealer["nickname"]} have [ (X), {self.dealer["cards"][1]} ] Cards, Has score of {self.dealer["score"]}'+c.x.encode())
         for i in self.clients:
-            self.broadcast(f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'.encode())
+            self.broadcast(c.cl+c.y+f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'+c.x.encode())
 
 
     def hit_card(self,client):
@@ -88,12 +88,12 @@ class ServerConnect:
                 if self.clients[client]["score"] > 21:
                     self.another_thing +=1
                     self.clients[client]["status"] = False
-                    self.broadcast(f'{self.clients[client]["nickname"]} is Busted.\n'.encode())
+                    self.broadcast(f'c.cl+c.o+{self.clients[client]["nickname"]} is Busted.\n'+c.x.encode())
 
                 if self.clients[client]["score"] == 21:
                     self.another_thing +=1
                     self.clients[client]["status"] = False
-                    self.broadcast(f'{self.clients[client]["nickname"]} Won.\n'.encode())
+                    self.broadcast(c.cl+c.g+f'{self.clients[client]["nickname"]} Won.\n'+c.x.encode())
 
                 self.display_Score()
 
@@ -133,13 +133,13 @@ class ServerConnect:
                         if self.dealer["score"] > 21:
                             self.dealer["score"] = 0
                             self.dealer["status"] = False
-                            self.broadcast(f' Dealer is Busted.\n'.encode())
+                            self.broadcast(c.cl+c.r+f' Dealer is Busted.\n'+c.x.encode())
                             break
 
                         if self.dealer["score"] == 21:
                             self.dealer["status"] = False
-                            self.broadcast(f'You Lost.'.encode())
-                            self.broadcast(f'Dealer Won.\n'.encode())
+                            self.broadcast(c.cl+c.r+f'You Lost.'.encode()+c.x)
+                            self.broadcast(c.cl+c.g+f'Dealer Won.\n'.encode()+c.x)
                             break
                     
                         if self.dealer["score"]  >  17:
@@ -148,9 +148,9 @@ class ServerConnect:
                     self.display_Score()
                     for player in self.clients:
                                 if self.clients[player]["score"] > self.dealer["score"] and self.clients[player]["score"] <= 21:
-                                    self.broadcast(f'{self.clients[player]["nickname"]} Won!\n'.encode())
+                                    self.broadcast(c.cl+c.g+f'{self.clients[player]["nickname"]} Won!\n'.encode()+c.x)
                                 else:
-                                    self.broadcast(f'{self.clients[player]["nickname"]} Lost.\n'.encode())
+                                    self.broadcast(c.cl+c.r+f'{self.clients[player]["nickname"]} Lost.\n'.encode()+c.x)
 
 
                     self.reset_vales()
@@ -158,7 +158,7 @@ class ServerConnect:
 
                             
     def help(self,client):
-        message = """\n
+        message = c.cl+c.b+"""\n
 Hi, Just here are the commands you need to know
     1) /hit   -> To hit 
     2) /stand -> To stand
@@ -166,7 +166,7 @@ Hi, Just here are the commands you need to know
     4) /leave -> To exit the game.
     5) /reset -> To restart/ reset the game
     6) /help  -> Get to know your commands
-    """
+    """+c.x
         client.send(message.encode("ascii"))
 
 
@@ -184,7 +184,7 @@ Hi, Just here are the commands you need to know
                     self.clients[client]["turn_no"] = self.count
                     
                     if self.count==len(self.clients):
-                        self.broadcast(f"Starting Game!!".encode('ascii'))
+                        self.broadcast(c.cl+c.b+f"Starting Game!!"+c.x.encode('ascii'))
                         self.started=True
                         self.startgame()
                     continue
@@ -193,7 +193,7 @@ Hi, Just here are the commands you need to know
                         self.hit_card(client)
                         continue
                     else:
-                        client.send("Hold on It's not you turn yet.!!\n".encode("ascii"))
+                        client.send(c.cl+c.r+"Hold on It's not you turn yet.!!\n"+c.x.encode("ascii"))
                 
                 if f'{self.clients[client]["nickname"]}: /stand' == message.decode("ascii"):
 
@@ -201,20 +201,21 @@ Hi, Just here are the commands you need to know
                         self.stand_card(client)
                         continue
                     else:
-                        client.send("Hold on It's not you turn yet.!!\n".encode("ascii"))
+                        client.send(c.cl+c.r+"Hold on It's not you turn yet.!!\n"+c.x.encode("ascii"))
 
 
                 if "/leave" in message.decode("ascii") :
-                        self.broadcast(f'{self.clients[client]["nickname"]} left the Chat!'.encode('ascii'))
-                        print(f'{self.clients[client]["nickname"]} left the Chat!')
+                        self.broadcast(f'c.cl+c.v+{self.clients[client]["nickname"]} left the Chat!'+c.x.encode('ascii'))
+                        print(c.cl+c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x)
                         del self.clients[client]
                         self.count -= 1
                         # break
+
                 self.broadcast(message)  
 
             except socket.error:
                 if client in self.clients:
-                        self.broadcast(f'{self.clients[client]["nickname"]} left the Chat!'.encode('ascii'))
+                        self.broadcast(f'c.cl+c.v+{self.clients[client]["nickname"]} left the Chat!'+c.x.encode('ascii'))
                         del self.clients[client]
                         break
 
@@ -235,7 +236,7 @@ Hi, Just here are the commands you need to know
             while nickname in self.clients.values():
                 print(self.clients)
                 nickname = ""
-                client.send("Username Present".encode('ascii'))
+                client.send(c.cl+c.r+"Username Present".encode('ascii')+c.x)
                 nickname = client.recv(1024).decode('ascii')
                 
 
