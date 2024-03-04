@@ -25,7 +25,7 @@ class ServerConnect:
         self.started=False
         self.dealer={}
         self.deck = []
-        self.another_thing = None
+        self.another_thing = 0
 
     def startgame(self):
         self.dealer = {"nickname" : "dealer" , "cards" : [] , "score" : 0 , "status" : False}
@@ -108,15 +108,7 @@ class ServerConnect:
             self.clients[i]["score"] = 0
             self.clients[i]["cards"] = []
             self.clients[i]["status"] = True
-        
-
-    def stand_card(self,client):
-            self.another_thing +=1
-            self.clients[client]["status"] = False
-            flag=True
-            for i in self.clients:
-                 if self.clients[i]["status"]:
-                      flag=False
+    def end_game(self,flag):   
             if flag:
                 while True:
                     self.dealer["cards"].append(self.deck.pop())
@@ -158,6 +150,16 @@ class ServerConnect:
                 
                 self.reset_vales()
 
+    def stand_card(self,client):
+            self.another_thing +=1
+            self.clients[client]["status"] = False
+            flag=True
+            for i in self.clients:
+                 if self.clients[i]["status"]:
+                      flag=False
+            if flag:
+                 self.end_game(flag)
+    
                             
     def help(self,client):
         message = c.b+"""\n
@@ -180,52 +182,57 @@ Hi, Just here are the commands you need to know
         while True:
             try:
                 message = client.recv(1024)
-                if (f'{self.clients[client]["nickname"]}: /start' == message.decode("ascii")) or (f'{self.clients[client]["nickname"]}: /reset' == message.decode("ascii")):
-                    self.broadcast(f'{self.clients[client]["nickname"]} is ready to play!'.encode('ascii'))
-                    self.count+=1
-                    self.clients[client]["turn_no"] = self.count
+                try:
+                    if ((f'{self.clients[client]["nickname"]}: /start') == message.decode("ascii")) or ((f'{self.clients[client]["nickname"]}: /reset') == message.decode("ascii")):
+                        self.broadcast(f'{self.clients[client]["nickname"]} is ready to play!'.encode('ascii'))
+                        self.count+=1
+                        self.clients[client]["turn_no"] = self.count
+                        
+                        if self.count==len(self.clients):
+                            self.broadcast((c.b+f"Starting Game!!"+c.x).encode('ascii'))
+                            self.started=True
+                            self.startgame()
+                        continue
+                    if f'{self.clients[client]["nickname"]}: /hit' == message.decode("ascii"):
+                        if  self.clients[client]["turn_no"] == self.another_thing:
+                            self.hit_card(client)
+                            continue
+                        else:
+                            client.send((c.r+"Hold on It's not you turn yet.!!\n"+c.x).encode("ascii"))
                     
-                    if self.count==len(self.clients):
-                        self.broadcast((c.b+f"Starting Game!!"+c.x).encode('ascii'))
-                        self.started=True
-                        self.startgame()
-                    continue
-                if f'{self.clients[client]["nickname"]}: /hit' == message.decode("ascii"):
-                    if  self.clients[client]["turn_no"] == self.another_thing:
-                        self.hit_card(client)
-                        continue
-                    else:
-                        client.send((c.r+"Hold on It's not you turn yet.!!\n"+c.x).encode("ascii"))
-                
-                if f'{self.clients[client]["nickname"]}: /stand' == message.decode("ascii"):
+                    if f'{self.clients[client]["nickname"]}: /stand' == message.decode("ascii"):
 
-                    if  self.clients[client]["turn_no"] == self.another_thing:
-                        self.stand_card(client)
-                        continue
-                    else:
-                        client.send((c.r+"Hold on It's not you turn yet.!!\n"+c.x).encode("ascii"))
+                        if  self.clients[client]["turn_no"] == self.another_thing:
+                            self.stand_card(client)
+                            continue
+                        else:
+                            client.send((c.r+"Hold on It's not you turn yet.!!\n"+c.x).encode("ascii"))
 
 
-                if "/leave" in message.decode("ascii") :
-                        if self.started:
-                            for i in self.clients:
-                                if self.clients[client]["turn_no"]<self.another_thing:
-                                      self.another_thing-=1
-                                if self.clients[i]["turn_no"]>self.clients[client]["turn_no"]:
-                                      self.clients[i]["turn_no"]-=1 
-                        self.broadcast((f'c.v+{self.clients[client]["nickname"]} left the Chat!'+c.x).encode('ascii'))
-                        print((c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x))
-                        del self.clients[client]
-                        self.count -= 1
-                        # break
+                    if "/leave" in message.decode("ascii") :
+                            if self.started:
+                                print(self.another_thing,self.count,self.clients[client]["turn_no"])
+                                for i in self.clients:
+                                    if self.clients[client]["turn_no"]<self.another_thing:
+                                        self.another_thing-=1
+                                    if self.clients[i]["turn_no"]>self.clients[client]["turn_no"]:
+                                        self.clients[i]["turn_no"]-=1 
+                            self.broadcast((c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x).encode('ascii'))
+                            print((c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x))
+                            del self.clients[client]
+                            self.count -= 1
+                            if self.another_thing==self.count:
+                                self.end_game(True)
 
-                self.broadcast(message)  
-
+                    self.broadcast(message)  
+                except Exception :
+                     break          
             except socket.error:
                 if client in self.clients:
                         self.broadcast((c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x).encode('ascii'))
                         del self.clients[client]
                         break
+
 
     def receive_connection(self):
         while True:
@@ -234,7 +241,7 @@ Hi, Just here are the commands you need to know
             if self.started:
                 client.send("Games has started. Try joining another room or wait till game is finished".encode('ascii'))
                 continue
-            if len(self.clients) == 2 :
+            if len(self.clients) == 4 :
                 client.send("Room Full".encode('ascii'))
                 continue
 
