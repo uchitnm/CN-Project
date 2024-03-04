@@ -65,7 +65,7 @@ class ServerConnect:
 
             
     def display_Score(self):
-        self.broadcast(f'{self.dealer["nickname"]} have [ (X), {self.dealer["cards"][1]} ] Cards, Has score of {self.dealer["score"]}'.encode())
+        self.broadcast(f'{self.dealer["nickname"]} have [ (X), {self.dealer["cards"][1]} ] Cards, Has score of {self.dealer["score"]}\n'.encode())
         for i in self.clients:
             self.broadcast(f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'.encode())
 
@@ -120,41 +120,42 @@ class ServerConnect:
             if flag:
                 while True:
                     self.dealer["cards"].append(self.deck.pop())
-                    self.dealer["score"] = 0
+                    self.dealer["score"]=0
                     dealer_cards = sorted(self.dealer["cards"], key = lambda x : func(x))
                     for i in dealer_cards:
                         if i[1] in "2345678910":
                             self.dealer["score"] += int(i[1])
                         elif i[1] == "A":
-                            self.dealer["score"] += 11
+                            if self.dealer["score"]>10:
+                                 self.dealer["score"]+=1
+                            else:
+                                self.dealer["score"] += 11
                         else:
                             self.dealer["score"] += 10
 
-                        if self.dealer["score"] > 21:
-                            self.dealer["score"] = 0
+                    if self.dealer["score"] > 21:
                             self.dealer["status"] = False
                             self.broadcast(f' Dealer is Busted.\n'.encode())
                             break
 
-                        if self.dealer["score"] == 21:
+                    if self.dealer["score"] == 21:
                             self.dealer["status"] = False
                             self.broadcast(f'You Lost.'.encode())
                             self.broadcast(f'Dealer Won.\n'.encode())
                             break
                     
-                        if self.dealer["score"]  >  17:
+                    if self.dealer["score"]  >  17:
                              break
                     
-                    self.display_Score()
-                    for player in self.clients:
-                                if self.clients[player]["score"] > self.dealer["score"] and self.clients[player]["score"] <= 21:
+                self.display_Score()
+                for player in self.clients:
+                                if self.clients[player]["score"] > self.dealer["score"] and self.clients[player]["score"] <= 21 and self.dealer["score"] <= 21:
                                     self.broadcast(f'{self.clients[player]["nickname"]} Won!\n'.encode())
                                 else:
                                     self.broadcast(f'{self.clients[player]["nickname"]} Lost.\n'.encode())
 
 
-                    self.reset_vales()
-                    break
+                self.reset_vales()
 
                             
     def help(self,client):
