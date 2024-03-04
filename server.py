@@ -1,11 +1,13 @@
 import threading
 import socket
+import ssl  # Import SSL module
 import random
 import colors as c
 
 ip = "127.0.0.1"
-port = [49153,49154,49155,49156]
-server_sockets = [socket.socket(socket.AF_INET, socket.SOCK_STREAM) for i in range(4)]
+port = [49153, 49154, 49155, 49156]
+server_sockets = [ssl.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM), certfile='path/to/server.crt', keyfile='path/to/server.key', server_side=True, ssl_version=ssl.PROTOCOL_TLS) for _ in range(4)]
+# => change certfile and keyfile to app values.
 
 for i, server_socket in enumerate(server_sockets):
     server_socket.bind((ip, port[i]))

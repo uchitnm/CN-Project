@@ -2,6 +2,7 @@ import socket
 import threading
 import json
 import sys
+import ssl
 
 def enter_server():
     with open('servers.json', ) as f:
@@ -20,8 +21,12 @@ def enter_server():
     
     global client
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # Connect to a host
+    client = ssl.wrap_socket(client, cert_reqs=ssl.CERT_NONE, ssl_version=ssl.PROTOCOL_TLS) #-> change ssl.CERT_NONE to app value.
     client.connect((ip, port))
+    
+    # client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # # Connect to a host
+    # client.connect((ip, port))
 
 
 # Menu loop, it will loop until the user choose to enter a server
@@ -44,6 +49,7 @@ def receive():
             break
         try:
             message = client.recv(1024).decode()
+
             if message=="Games has started. Try joining another room or wait till game is finished":
                 print(message)
                 raise socket.error
@@ -74,6 +80,12 @@ def receive():
             exit(0)
             break
 
+        except ssl.SSLError as e:
+            print(f'SSL Error: {e}')
+            client.close()
+            stop_thread = True
+            break
+
 def write():
     global stop_thread
     while True:
@@ -96,6 +108,12 @@ def write():
 
         except socket.error:
             print('Error Occurred while Sending Message')
+            client.close()
+            stop_thread = True
+            break
+
+        except ssl.SSLError as e:
+            print(f'SSL Error: {e}')
             client.close()
             stop_thread = True
             break
