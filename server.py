@@ -8,9 +8,6 @@ ip = "127.0.0.1"
 port = [49153, 49154, 49155, 49156]
 server_sockets = [ ssl.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM), certfile='./server.crt', keyfile='./server.key', server_side=True, ssl_version=ssl.PROTOCOL_TLS) for _ in range(4) ]
 
-# server_sockets = [ socket.socket(socket.AF_INET, socket.SOCK_STREAM) for _ in range(4) ]
-# server_sockets = [ssl.create_default_context(ssl.Purpose.CLIENT_AUTH).load_cert_chain(certfile='./server.crt', keyfile='./server.key') for _ in range(4) ]
-
 for i, server_socket in enumerate(server_sockets):
     server_socket.bind((ip, port[i]))
     server_socket.listen()
@@ -19,6 +16,7 @@ def func(i):
         if i[1] == "A":
                 return "Z"
         return i[1]
+
 class ServerConnect:
     def __init__(self, server):
         self.server = server
@@ -29,7 +27,6 @@ class ServerConnect:
         self.started=False
         self.dealer={}
         self.deck = []
-        self.another_thing = 0
         self.priority = []
 
     def startgame(self):
@@ -62,11 +59,8 @@ class ServerConnect:
         for i in self.clients:
             self.broadcast((c.b+f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'+c.x).encode())
         
-        self.another_thing = 1 
 
-
-
-        self.broadcast((c.y+f" Hit OR Stand : "+c.x).encode())
+        self.broadcast((c.y+f"It's {self.clients[self.priority[0]]['nickname']} Turn to Play.\nPlease - Hit OR Stand : "+c.x).encode('ascii'))
 
             
     def display_Score(self):
@@ -76,6 +70,9 @@ class ServerConnect:
             self.broadcast((c.y+f'{self.dealer["nickname"]} have [ (X), {self.dealer["cards"][1]} ] Cards, Has score of {self.dealer["score"]}\n'+c.x).encode())
         for i in self.clients:
             self.broadcast((c.y+f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'+c.x).encode())
+        
+        if self.priority:
+            self.broadcast((c.y+f"It's {self.clients[self.priority[0]]['nickname']} Turn to Play.\nPlease - Hit OR Stand : "+c.x).encode('ascii'))
 
 
     def hit_card(self,client):
@@ -93,20 +90,19 @@ class ServerConnect:
                             self.clients[client]["score"] += 11
                     else:
                         self.clients[client]["score"] += 10
+                self.display_Score()
 
                 if self.clients[client]["score"] > 21:
-
                     self.clients[client]["status"] = False
-                    self.priority.remove[client]
+                    self.priority.remove(client)
                     self.broadcast((c.o+f'{self.clients[client]["nickname"]} is Busted.\n'+c.x).encode())
 
                 if self.clients[client]["score"] == 21:
-
                     self.clients[client]["status"] = False
-                    self.priority.remove[client]
+                    self.priority.remove(client)
                     self.broadcast((c.g+f'{self.clients[client]["nickname"]} Won.\n'+c.x).encode())
 
-                self.display_Score()
+
 
                 if not self.priority:
                     self.end_game(True)
@@ -162,6 +158,7 @@ class ServerConnect:
                                 else:
                                     self.broadcast((c.r+f'{self.clients[player]["nickname"]} Lost!\n'+c.x).encode())
 
+
                 self.reset_vales()
             
             else :
@@ -174,8 +171,11 @@ class ServerConnect:
             for i in self.clients:
                  if self.clients[i]["status"]:
                         flag=False
+
             if flag:
                  self.end_game(flag)
+                
+            self.display_Score()
     
                             
     def help(self,client):
@@ -207,26 +207,31 @@ Hi, Just here are the commands you need to know
                         self.priority.append(client)
                         
                         if self.count==len(self.clients):
-                            self.broadcast((c.b+f"Starting Game!!"+c.x).encode('ascii'))
+                            self.broadcast((c.cl+c.b+f"Starting Game!!"+c.x).encode('ascii'))
+                            
                             self.started=True
                             self.startgame()
                         continue
-                    if f'{self.clients[client]["nickname"]}: /hit' == message.decode("ascii"):
+                    if f'{self.clients[client]["nickname"]}: /hit' == message.decode("ascii") and self.started :
 
                         if client == self.priority[0]:
                             self.hit_card(client)
                             continue
+                        elif client in self.priority:
+                            client.send((c.r+"Hold on It's not you turn yet.!\n"+c.x).encode("ascii"))
                         else:
-                            client.send((c.r+"Hold on It's not you turn yet.!!\n"+c.x).encode("ascii"))
+                            client.send((c.r+"Your turn is over.!!\n"+c.x).encode("ascii"))
                     
-                    if f'{self.clients[client]["nickname"]}: /stand' == message.decode("ascii"):
+                    if f'{self.clients[client]["nickname"]}: /stand' == message.decode("ascii") and self.started:
 
 
                         current_player = self.priority[0] 
                         if client == current_player:
                             self.stand_card(client)
+                        elif client in self.priority:
+                            client.send((c.r+"Hold on It's not you turn yet.!\n"+c.x).encode("ascii"))
                         else:
-                            client.send((c.r + "Hold on, it's not your turn yet.\n" + c.x).encode("ascii"))
+                            client.send((c.r+"Your turn is over.!!\n"+c.x).encode("ascii"))
 
 
                     if "/leave" in message.decode("ascii") :
@@ -238,7 +243,6 @@ Hi, Just here are the commands you need to know
                                 self.count -= 1
                                 if client in self.priority:
                                     self.priority.remove(client)
-
                                 if not self.priority:
                                     self.end_game(True)
 
