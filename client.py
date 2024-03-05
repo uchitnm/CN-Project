@@ -10,6 +10,7 @@ def enter_server():
     print("Rooms Avaliable: ")
     for servers in data:
         print(servers)
+
     # Ask user for the name of the server to join
     server_name = input("Enter the server name:")
     global nickname
@@ -25,25 +26,15 @@ def enter_server():
     client = ssl.wrap_socket(client, cert_reqs=ssl.CERT_NONE, ssl_version=ssl.PROTOCOL_TLS)
     client.connect((ip, port))
     
-    # client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # # Connect to a host
-    # client.connect((ip, port))
-
-
 # Menu loop, it will loop until the user choose to enter a server
-
 while True:
     enter_server()
     break
 
-
-
 stop_thread = False
 
-
-
 def receive():
-    local_name = ""
+
     while True:
         global stop_thread
         if stop_thread:
@@ -51,9 +42,10 @@ def receive():
         try:
             message = client.recv(1024).decode()
 
-            if message=="Games has started. Try joining another room or wait till game is finished":
+            if message =="Games has started. Try joining another room or wait till game is finished":
                 print(message)
                 raise socket.error
+            
             if message == "Room Full":
                 print(message)
                 raise socket.error
@@ -62,9 +54,11 @@ def receive():
                 print(message)
                 sys.stdout.flush()  # Flush the output buffer
                 # Ask the user to choose a different nickname
+
                 global nickname
                 nickname=""
                 nickname = input("Choose a different nickname:")
+
                 # Retry sending the nickname
                 client.send(nickname.encode('ascii'))
                 continue
@@ -77,17 +71,11 @@ def receive():
         except socket.error:
             if stop_thread:
                 exit(0)
+            stop_thread = True
             print('Error Occurred while Connecting')
             client.close()
-            stop_thread = True
             exit(0)
-            break
 
-        except ssl.SSLError as e:
-            print(f'SSL Error: {e}')
-            client.close()
-            stop_thread = True
-            break
 
 def write():
     global stop_thread
@@ -106,22 +94,18 @@ def write():
                     print("You left the server.")
                     client.close()
                     break
+            
             if(nickname!=""):
                 client.send(message.encode('ascii'))
 
         except socket.error:
+            stop_thread = True            
             print('Error Occurred while Sending Message')
             client.close()
-            stop_thread = True
-            break
-
-        except ssl.SSLError as e:
-            print(f'SSL Error: {e}')
-            client.close()
-            stop_thread = True
             break
 
 receive_thread = threading.Thread(target=receive)
 receive_thread.start()
+
 write_thread = threading.Thread(target=write)
 write_thread.start()

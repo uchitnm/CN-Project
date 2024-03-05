@@ -1,6 +1,6 @@
 import threading
 import socket
-import ssl  # Import SSL module
+import ssl
 import random
 import colors as c
 
@@ -28,6 +28,7 @@ class ServerConnect:
         self.dealer={}
         self.deck = []
         self.priority = []
+        self.max_players = 4
 
     def startgame(self):
         self.dealer = {"nickname" : "dealer" , "cards" : [] , "score" : 0 , "status" : False}
@@ -171,11 +172,10 @@ class ServerConnect:
             for i in self.clients:
                  if self.clients[i]["status"]:
                         flag=False
-
             if flag:
                  self.end_game(flag)
-                
-            self.display_Score()
+            else:   
+                self.display_Score()
     
                             
     def help(self,client):
@@ -238,7 +238,7 @@ Hi, Just here are the commands you need to know
                             if self.started:
 
                                 self.broadcast((c.v+f'{self.clients[client]["nickname"]} left the Lobby!'+c.x).encode('ascii'))
-                                print((c.v+f'{self.clients[client]["nickname"]} left the Lobby!'+c.x))
+                                # print((c.v+f'{self.clients[client]["nickname"]} left the Lobby!'+c.x))
                                 del self.clients[client]
                                 self.count -= 1
                                 if client in self.priority:
@@ -252,7 +252,7 @@ Hi, Just here are the commands you need to know
                      break          
             except socket.error:
                 if client in self.clients:
-                        self.broadcast((c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x).encode('ascii'))
+                        self.broadcast((c.v+f'{self.clients[client]["nickname"]} left the Lobby!'+c.x).encode('ascii'))
                         del self.clients[client]
                         break
 
@@ -262,36 +262,36 @@ Hi, Just here are the commands you need to know
 
             client, address = self.server.accept()
             if self.started:
-                client.send("Games has started. Try joining another room or wait till game is finished".encode('ascii'))
+                client.send("Games has started. Try joining another Lobby or wait till game is finished".encode('ascii'))
                 continue
-            if len(self.clients) == 4 :
-                client.send("Room Full".encode('ascii'))
+            if len(self.clients) == self.max_players :
+                client.send("Lobby Full".encode('ascii'))
                 continue
 
             client.send('NICK'.encode('ascii'))
             nickname = client.recv(1024).decode('ascii')
 
             while nickname in self.clients.values():
-                print(self.clients)
+                # print(self.clients)
                 nickname = ""
                 client.send((c.r+"Username Present"+c.x).encode('ascii'))
                 nickname = client.recv(1024).decode('ascii')
                 
 
-            print(f"Connected with {(address)}")
+            # print(f"Connected with {(address)}")
             
             self.clients[client] = { "nickname" : nickname , "cards" : [] , "score" : 0 , "status" : True }
-            print(self.clients)
-            print(f'Nickname of the client is {nickname}')
-            self.broadcast(f'{nickname} joined the Chat'.encode('ascii'))
-            client.send(f'Connected to the Server!, {len(self.clients)} player(s) is/are in the room.'.encode('ascii'))
+            # print(self.clients)
+            # print(f'Nickname of the client is {nickname}')
+            self.broadcast(f'{nickname} joined the Lobby'.encode('ascii'))
+            client.send(f'Connected to the Server!, {len(self.clients)} player(s) is/are in the Lobby.'.encode('ascii'))
             self.help(client)
 
 
             thread = threading.Thread(target=self.handle, args=(client,))
             thread.start()
 
-print('Server is Listening ...')
+print('Server Running ...')
 
 
 servers = [ServerConnect(server_socket) for server_socket in server_sockets]
