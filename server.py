@@ -30,7 +30,7 @@ class ServerConnect:
         self.dealer={}
         self.deck = []
         self.another_thing = 0
-        self.proprity = []
+        self.priority = []
 
     def startgame(self):
         self.dealer = {"nickname" : "dealer" , "cards" : [] , "score" : 0 , "status" : False}
@@ -70,7 +70,10 @@ class ServerConnect:
 
             
     def display_Score(self):
-        self.broadcast((c.y+f'{self.dealer["nickname"]} have [ (X), {self.dealer["cards"][1]} ] Cards, Has score of {self.dealer["score"]}\n'+c.x).encode())
+        if not self.priority:
+            self.broadcast((c.y+f'{self.dealer["nickname"]} have {self.dealer["cards"]} Cards, Has score of {self.dealer["score"]}\n'+c.x).encode())
+        else:
+            self.broadcast((c.y+f'{self.dealer["nickname"]} have [ (X), {self.dealer["cards"][1]} ] Cards, Has score of {self.dealer["score"]}\n'+c.x).encode())
         for i in self.clients:
             self.broadcast((c.y+f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'+c.x).encode())
 
@@ -79,6 +82,7 @@ class ServerConnect:
                 
                 self.clients[client]["cards"].append(self.deck.pop())
                 self.clients[client]["score"] = 0 
+
                 for card_val in sorted(self.clients[client]["cards"], key = lambda x : func(x)):
                     if card_val[1] in "2345678910":
                         self.clients[client]["score"] += int(card_val[1])
@@ -91,31 +95,34 @@ class ServerConnect:
                         self.clients[client]["score"] += 10
 
                 if self.clients[client]["score"] > 21:
-                    self.another_thing +=1
+
                     self.clients[client]["status"] = False
-                    del self.clients[client]
+                    self.priority.remove[client]
                     self.broadcast((c.o+f'{self.clients[client]["nickname"]} is Busted.\n'+c.x).encode())
 
                 if self.clients[client]["score"] == 21:
-                    self.another_thing +=1
+
                     self.clients[client]["status"] = False
+                    self.priority.remove[client]
                     self.broadcast((c.g+f'{self.clients[client]["nickname"]} Won.\n'+c.x).encode())
 
                 self.display_Score()
 
-                if self.another_thing > self.count:
-                    self.stand_card(client)
+                if not self.priority:
+                    self.end_game(True)
 
     def reset_vales(self):
         self.started = False
         self.count = 0
+        self.priority = []
 
         for i in self.clients:
             self.clients[i]["score"] = 0
             self.clients[i]["cards"] = []
             self.clients[i]["status"] = True
-    def end_game(self,flag):   
-            if flag:
+
+    def end_game(self,flag): 
+            if flag and self.clients:
                 while True:
                     self.dealer["cards"].append(self.deck.pop())
                     self.dealer["score"]=0
@@ -148,21 +155,25 @@ class ServerConnect:
                 self.display_Score()
 
                 for player in self.clients:
-                                if self.clients[player]["score"] > self.dealer["score"] and self.clients[player]["score"] <= 21:
+                                if (self.clients[player]["score"] > self.dealer["score"] and self.clients[player]["score"] <= 21) and (self.dealer["score"]  <= 21):
+                                    self.broadcast((c.g+f'{self.clients[player]["nickname"]} Won!\n'+c.x).encode())
+                                elif (self.dealer["score"]  >  21 and self.clients[player]["score"] <= 21):
                                     self.broadcast((c.g+f'{self.clients[player]["nickname"]} Won!\n'+c.x).encode())
                                 else:
-                                    self.broadcast((c.r+f'{self.clients[player]["nickname"]} Lost.\n'+c.x).encode())
+                                    self.broadcast((c.r+f'{self.clients[player]["nickname"]} Lost!\n'+c.x).encode())
 
-                
+                self.reset_vales()
+            
+            else :
                 self.reset_vales()
 
     def stand_card(self,client):
-            self.another_thing +=1
             self.clients[client]["status"] = False
             flag=True
+            self.priority.remove(client)
             for i in self.clients:
                  if self.clients[i]["status"]:
-                      flag=False
+                        flag=False
             if flag:
                  self.end_game(flag)
     
@@ -193,7 +204,7 @@ Hi, Just here are the commands you need to know
                         self.broadcast(f'{self.clients[client]["nickname"]} is ready to play!'.encode('ascii'))
                         self.count+=1
           
-                        self.proprity.append(client)
+                        self.priority.append(client)
                         
                         if self.count==len(self.clients):
                             self.broadcast((c.b+f"Starting Game!!"+c.x).encode('ascii'))
@@ -201,8 +212,8 @@ Hi, Just here are the commands you need to know
                             self.startgame()
                         continue
                     if f'{self.clients[client]["nickname"]}: /hit' == message.decode("ascii"):
-                        # if  self.clients[client]["turn_no"] == self.another_thing :
-                        if client == self.proprity[0]:
+
+                        if client == self.priority[0]:
                             self.hit_card(client)
                             continue
                         else:
@@ -210,16 +221,10 @@ Hi, Just here are the commands you need to know
                     
                     if f'{self.clients[client]["nickname"]}: /stand' == message.decode("ascii"):
 
-                        # if  self.clients[client]["turn_no"] == self.another_thing:
-                        #     self.stand_card(client)
-                        #     continue
-                        # else:
-                        #     client.send((c.r+"Hold on It's not you turn yet.!!\n"+c.x).encode("ascii"))
 
-                        current_player = self.proprity[0]  # Get the player who has the current turn
+                        current_player = self.priority[0] 
                         if client == current_player:
                             self.stand_card(client)
-                            del self.clients[client]
                         else:
                             client.send((c.r + "Hold on, it's not your turn yet.\n" + c.x).encode("ascii"))
 
@@ -227,14 +232,16 @@ Hi, Just here are the commands you need to know
                     if "/leave" in message.decode("ascii") :
                             if self.started:
 
-                                self.broadcast((c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x).encode('ascii'))
-                                print((c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x))
+                                self.broadcast((c.v+f'{self.clients[client]["nickname"]} left the Lobby!'+c.x).encode('ascii'))
+                                print((c.v+f'{self.clients[client]["nickname"]} left the Lobby!'+c.x))
                                 del self.clients[client]
                                 self.count -= 1
-                                if client in self.proprity:
-                                    self.proprity.remove(client)
-                                if not self.proprity:
+                                if client in self.priority:
+                                    self.priority.remove(client)
+
+                                if not self.priority:
                                     self.end_game(True)
+
 
                     self.broadcast(message)  
                 except Exception :
@@ -269,11 +276,10 @@ Hi, Just here are the commands you need to know
 
             print(f"Connected with {(address)}")
             
-            self.clients[client] = { "nickname" : nickname , "cards" : [] , "score" : 0 , "status" : True , "turn_no" : None }
+            self.clients[client] = { "nickname" : nickname , "cards" : [] , "score" : 0 , "status" : True }
             print(self.clients)
             print(f'Nickname of the client is {nickname}')
             self.broadcast(f'{nickname} joined the Chat'.encode('ascii'))
-
             client.send(f'Connected to the Server!, {len(self.clients)} player(s) is/are in the room.'.encode('ascii'))
             self.help(client)
 
