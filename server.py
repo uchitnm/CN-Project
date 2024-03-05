@@ -6,8 +6,9 @@ import colors as c
 
 ip = "127.0.0.1"
 port = [49153, 49154, 49155, 49156]
-server_sockets = [ssl.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM), certfile='./server.crt', keyfile='./server.key', server_side=True, ssl_version=ssl.PROTOCOL_TLS) for _ in range(4)]
-# => change certfile and keyfile to app values.
+server_sockets = [ssl.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM), certfile='./server.csr', keyfile='./server.key', server_side=True, ssl_version=ssl.PROTOCOL_TLS) for _ in range(4)]
+# server_sockets = [ socket.socket(socket.AF_INET, socket.SOCK_STREAM) for _ in range(4) ]
+
 
 for i, server_socket in enumerate(server_sockets):
     server_socket.bind((ip, port[i]))
@@ -28,6 +29,7 @@ class ServerConnect:
         self.dealer={}
         self.deck = []
         self.another_thing = 0
+        self.proprity = []
 
     def startgame(self):
         self.dealer = {"nickname" : "dealer" , "cards" : [] , "score" : 0 , "status" : False}
@@ -189,6 +191,7 @@ Hi, Just here are the commands you need to know
                         self.broadcast(f'{self.clients[client]["nickname"]} is ready to play!'.encode('ascii'))
                         self.count+=1
                         self.clients[client]["turn_no"] = self.count
+                        self.proprity.append(client)
                         
                         if self.count==len(self.clients):
                             self.broadcast((c.b+f"Starting Game!!"+c.x).encode('ascii'))
@@ -196,7 +199,8 @@ Hi, Just here are the commands you need to know
                             self.startgame()
                         continue
                     if f'{self.clients[client]["nickname"]}: /hit' == message.decode("ascii"):
-                        if  self.clients[client]["turn_no"] == self.another_thing:
+                        # if  self.clients[client]["turn_no"] == self.another_thing :
+                        if client == self.proprity[0]:
                             self.hit_card(client)
                             continue
                         else:
@@ -204,11 +208,17 @@ Hi, Just here are the commands you need to know
                     
                     if f'{self.clients[client]["nickname"]}: /stand' == message.decode("ascii"):
 
-                        if  self.clients[client]["turn_no"] == self.another_thing:
+                        # if  self.clients[client]["turn_no"] == self.another_thing:
+                        #     self.stand_card(client)
+                        #     continue
+                        # else:
+                        #     client.send((c.r+"Hold on It's not you turn yet.!!\n"+c.x).encode("ascii"))
+
+                        current_player = self.proprity[0]  # Get the player who has the current turn
+                        if client == current_player:
                             self.stand_card(client)
-                            continue
                         else:
-                            client.send((c.r+"Hold on It's not you turn yet.!!\n"+c.x).encode("ascii"))
+                            client.send((c.r + "Hold on, it's not your turn yet.\n" + c.x).encode("ascii"))
 
 
                     if "/leave" in message.decode("ascii") :
@@ -223,6 +233,7 @@ Hi, Just here are the commands you need to know
                             print((c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x))
                             del self.clients[client]
                             self.count -= 1
+                            self.proprity.remove(client)
                             if self.another_thing==self.count:
                                 self.end_game(True)
 

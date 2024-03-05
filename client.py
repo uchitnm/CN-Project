@@ -20,8 +20,9 @@ def enter_server():
     port = data[server_name]["port"]
     
     global client
+    
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client = ssl.wrap_socket(client, cert_reqs=ssl.CERT_NONE, ssl_version=ssl.PROTOCOL_TLS) #-> change ssl.CERT_NONE to app value.
+    client = ssl.wrap_socket(client, cert_reqs=ssl.CERT_NONE, ssl_version=ssl.PROTOCOL_TLS)
     client.connect((ip, port))
     
     # client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
