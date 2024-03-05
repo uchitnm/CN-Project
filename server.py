@@ -61,10 +61,11 @@ class ServerConnect:
             self.broadcast((c.b+f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'+c.x).encode())
         
 
-        self.broadcast((c.y+f"It's {self.clients[self.priority[0]]['nickname']} Turn to Play.\nPlease - Hit OR Stand : "+c.x).encode('ascii'))
+        self.broadcast((c.m+f"It's {self.clients[self.priority[0]]['nickname']} Turn to Play.\nPlease - Hit OR Stand : "+c.x).encode('ascii'))
 
             
     def display_Score(self):
+        self.broadcast((c.cy+"The status:- "+c.x).encode())
         if not self.priority:
             self.broadcast((c.y+f'{self.dealer["nickname"]} have {self.dealer["cards"]} Cards, Has score of {self.dealer["score"]}\n'+c.x).encode())
         else:
@@ -73,7 +74,7 @@ class ServerConnect:
             self.broadcast((c.y+f'{self.clients[i]["nickname"]} have {self.clients[i]["cards"]} Cards, Has score of {self.clients[i]["score"]}\n'+c.x).encode())
         
         if self.priority:
-            self.broadcast((c.y+f"It's {self.clients[self.priority[0]]['nickname']} Turn to Play.\nPlease - Hit OR Stand : "+c.x).encode('ascii'))
+            self.broadcast((c.m+f"It's {self.clients[self.priority[0]]['nickname']} Turn to Play.\nPlease - Hit OR Stand : "+c.x).encode('ascii'))
 
 
     def hit_card(self,client):
@@ -91,7 +92,7 @@ class ServerConnect:
                             self.clients[client]["score"] += 11
                     else:
                         self.clients[client]["score"] += 10
-                self.display_Score()
+
 
                 if self.clients[client]["score"] > 21:
                     self.clients[client]["status"] = False
@@ -103,12 +104,12 @@ class ServerConnect:
                     self.priority.remove(client)
                     self.broadcast((c.g+f'{self.clients[client]["nickname"]} Won.\n'+c.x).encode())
 
-
-
+                self.display_Score()
                 if not self.priority:
                     self.end_game(True)
 
     def reset_vales(self):
+        self.broadcast((c.g+"Game Ended."+c.x).encode())
         self.started = False
         self.count = 0
         self.priority = []
@@ -148,7 +149,7 @@ class ServerConnect:
                     
                     if self.dealer["score"]  >  17:
                              break
-                    
+                
                 self.display_Score()
 
                 for player in self.clients:
@@ -159,9 +160,10 @@ class ServerConnect:
                                 else:
                                     self.broadcast((c.r+f'{self.clients[player]["nickname"]} Lost!\n'+c.x).encode())
 
+                                
+
 
                 self.reset_vales()
-            
             else :
                 self.reset_vales()
 
@@ -178,7 +180,7 @@ class ServerConnect:
                 self.display_Score()
     
                             
-    def help(self,client):
+    def help_rules(self,client):
         message = c.b+"""\n
 Hi, Just here are the commands you need to know
     1) /hit   -> To hit 
@@ -188,7 +190,7 @@ Hi, Just here are the commands you need to know
     5) /reset -> To restart/ reset the game
     6) /help  -> Get to know your commands
     """+c.x
-        client.send(message.encode("ascii"))
+        client.send(message.encode())
 
 
     def broadcast(self, message):
@@ -200,7 +202,7 @@ Hi, Just here are the commands you need to know
             try:
                 message = client.recv(1024)
                 try:
-                    if ((f'{self.clients[client]["nickname"]}: /start') == message.decode("ascii")) or ((f'{self.clients[client]["nickname"]}: /reset') == message.decode("ascii")):
+                    if ((f'{self.clients[client]["nickname"]}: /start') == message.decode()) or ((f'{self.clients[client]["nickname"]}: /reset') == message.decode()):
                         self.broadcast(f'{self.clients[client]["nickname"]} is ready to play!'.encode('ascii'))
                         self.count+=1
           
@@ -212,29 +214,27 @@ Hi, Just here are the commands you need to know
                             self.started=True
                             self.startgame()
                         continue
-                    if f'{self.clients[client]["nickname"]}: /hit' == message.decode("ascii") and self.started :
+                    if f'{self.clients[client]["nickname"]}: /hit' == message.decode() and self.started :
 
                         if client == self.priority[0]:
                             self.hit_card(client)
                             continue
                         elif client in self.priority:
-                            client.send((c.r+"Hold on It's not you turn yet.!\n"+c.x).encode("ascii"))
+                            client.send((c.r+"Hold on It's not you turn yet.!\n"+c.x).encode())
                         else:
-                            client.send((c.r+"Your turn is over.!!\n"+c.x).encode("ascii"))
+                            client.send((c.r+"Your turn is over.!!\n"+c.x).encode())
                     
-                    if f'{self.clients[client]["nickname"]}: /stand' == message.decode("ascii") and self.started:
-
-
+                    if f'{self.clients[client]["nickname"]}: /stand' == message.decode() and self.started:
                         current_player = self.priority[0] 
                         if client == current_player:
                             self.stand_card(client)
+                            continue
                         elif client in self.priority:
-                            client.send((c.r+"Hold on It's not you turn yet.!\n"+c.x).encode("ascii"))
+                            client.send((c.r+"Hold on It's not you turn yet.!\n"+c.x).encode())
                         else:
-                            client.send((c.r+"Your turn is over.!!\n"+c.x).encode("ascii"))
+                            client.send((c.r+"Your turn is over.!!\n"+c.x).encode())
 
-
-                    if "/leave" in message.decode("ascii") :
+                    if f'{self.clients[client]["nickname"]}: /leave' == message.decode() :
                             if self.started:
 
                                 self.broadcast((c.v+f'{self.clients[client]["nickname"]} left the Lobby!'+c.x).encode('ascii'))
@@ -245,6 +245,10 @@ Hi, Just here are the commands you need to know
                                     self.priority.remove(client)
                                 if not self.priority:
                                     self.end_game(True)
+                    
+                    if f'{self.clients[client]["nickname"]}: /help' == message.decode() :
+                        self.help_rules(client)
+                        continue
 
 
                     self.broadcast(message)  
@@ -285,7 +289,7 @@ Hi, Just here are the commands you need to know
             # print(f'Nickname of the client is {nickname}')
             self.broadcast(f'{nickname} joined the Lobby'.encode('ascii'))
             client.send(f'Connected to the Server!, {len(self.clients)} player(s) is/are in the Lobby.'.encode('ascii'))
-            self.help(client)
+            self.help_rules(client)
 
 
             thread = threading.Thread(target=self.handle, args=(client,))
