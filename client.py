@@ -75,6 +75,8 @@ def receive():
                 print(message)
 
         except socket.error:
+            if stop_thread:
+                exit(0)
             print('Error Occurred while Connecting')
             client.close()
             stop_thread = True
@@ -99,10 +101,10 @@ def write():
                 message = f'{nickname}: {input("")}'
 
             if "/leave" in message:
-                    client.send(message.encode("ascii"))
-                    print("Your left the server.")
-                    client.close()
                     stop_thread = True
+                    client.send(message.encode("ascii"))
+                    print("You left the server.")
+                    client.close()
                     break
             if(nickname!=""):
                 client.send(message.encode('ascii'))

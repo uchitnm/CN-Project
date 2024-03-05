@@ -93,6 +93,7 @@ class ServerConnect:
                 if self.clients[client]["score"] > 21:
                     self.another_thing +=1
                     self.clients[client]["status"] = False
+                    del self.clients[client]
                     self.broadcast((c.o+f'{self.clients[client]["nickname"]} is Busted.\n'+c.x).encode())
 
                 if self.clients[client]["score"] == 21:
@@ -144,8 +145,8 @@ class ServerConnect:
                     if self.dealer["score"]  >  17:
                              break
                     
-                    self.display_Score()
                 self.display_Score()
+
                 for player in self.clients:
                                 if self.clients[player]["score"] > self.dealer["score"] and self.clients[player]["score"] <= 21:
                                     self.broadcast((c.g+f'{self.clients[player]["nickname"]} Won!\n'+c.x).encode())
@@ -191,7 +192,7 @@ Hi, Just here are the commands you need to know
                     if ((f'{self.clients[client]["nickname"]}: /start') == message.decode("ascii")) or ((f'{self.clients[client]["nickname"]}: /reset') == message.decode("ascii")):
                         self.broadcast(f'{self.clients[client]["nickname"]} is ready to play!'.encode('ascii'))
                         self.count+=1
-                        self.clients[client]["turn_no"] = self.count
+          
                         self.proprity.append(client)
                         
                         if self.count==len(self.clients):
@@ -218,25 +219,22 @@ Hi, Just here are the commands you need to know
                         current_player = self.proprity[0]  # Get the player who has the current turn
                         if client == current_player:
                             self.stand_card(client)
+                            del self.clients[client]
                         else:
                             client.send((c.r + "Hold on, it's not your turn yet.\n" + c.x).encode("ascii"))
 
 
                     if "/leave" in message.decode("ascii") :
                             if self.started:
-                                print(self.another_thing,self.count,self.clients[client]["turn_no"])
-                                for i in self.clients:
-                                    if self.clients[client]["turn_no"]<self.another_thing:
-                                        self.another_thing-=1
-                                    if self.clients[i]["turn_no"]>self.clients[client]["turn_no"]:
-                                        self.clients[i]["turn_no"]-=1 
-                            self.broadcast((c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x).encode('ascii'))
-                            print((c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x))
-                            del self.clients[client]
-                            self.count -= 1
-                            self.proprity.remove(client)
-                            if self.another_thing==self.count:
-                                self.end_game(True)
+
+                                self.broadcast((c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x).encode('ascii'))
+                                print((c.v+f'{self.clients[client]["nickname"]} left the Chat!'+c.x))
+                                del self.clients[client]
+                                self.count -= 1
+                                if client in self.proprity:
+                                    self.proprity.remove(client)
+                                if not self.proprity:
+                                    self.end_game(True)
 
                     self.broadcast(message)  
                 except Exception :
