@@ -4,7 +4,7 @@ import ssl
 import random
 import colors as c
 
-ip = "127.0.0.1"
+ip = "192.168.10.212"
 port = [49153, 49154, 49155, 49156]
 server_sockets = [ ssl.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM), certfile='./server.crt', keyfile='./server.key', server_side=True, ssl_version=ssl.PROTOCOL_TLS) for _ in range(4) ]
 
@@ -235,10 +235,10 @@ Hi, Just here are the commands you need to know
                             client.send((c.r+"Your turn is over.!!\n"+c.x).encode())
 
                     if f'{self.clients[client]["nickname"]}: /leave' == message.decode() :
+                            self.broadcast((c.v+f'{self.clients[client]["nickname"]} left the Lobby!'+c.x).encode('ascii'))
+                            print(c.v+f'{self.clients[client]["nickname"]} left the Lobby!'+c.x)
                             if self.started:
 
-                                self.broadcast((c.v+f'{self.clients[client]["nickname"]} left the Lobby!'+c.x).encode('ascii'))
-                                # print((c.v+f'{self.clients[client]["nickname"]} left the Lobby!'+c.x))
                                 del self.clients[client]
                                 self.count -= 1
                                 if client in self.priority:
@@ -285,8 +285,8 @@ Hi, Just here are the commands you need to know
             # print(f"Connected with {(address)}")
             
             self.clients[client] = { "nickname" : nickname , "cards" : [] , "score" : 0 , "status" : True }
-            # print(self.clients)
-            # print(f'Nickname of the client is {nickname}')
+
+            print(f'{nickname} joined the Lobby.')
             self.broadcast(f'{nickname} joined the Lobby'.encode('ascii'))
             client.send(f'Connected to the Server!, {len(self.clients)} player(s) is/are in the Lobby.'.encode('ascii'))
             self.help_rules(client)
