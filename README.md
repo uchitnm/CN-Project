@@ -1,4 +1,4 @@
-Title: Multiplayer Blackjack Game with Secure Socket Programming in Python
+# Multiplayer Blackjack Game with Secure Socket Programming in Python3 #
 
 Experince gaming with our Multiplayer Blackjack experience – a unique and secure gaming platform crafted using Socket Programming in Python. This game effortlessly delivers the excitement of Blackjack right to your screen, providing an engaging gaming experience while also ensuring your safety through SSL security.
 
