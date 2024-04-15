@@ -4,6 +4,7 @@ import json
 import sys
 import ssl
 
+
 def enter_server():
     with open('servers.json', ) as f:
         data = json.load(f)
@@ -19,19 +20,22 @@ def enter_server():
     # Store the ip and port number for connection
     ip = data[server_name]["ip"]
     port = data[server_name]["port"]
-    
+
     global client
-    
+
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client = ssl.wrap_socket(client, cert_reqs=ssl.CERT_NONE, ssl_version=ssl.PROTOCOL_TLS)
+    client = ssl.wrap_socket(
+        client, cert_reqs=ssl.CERT_NONE, ssl_version=ssl.PROTOCOL_TLS)
     client.connect((ip, port))
-    
+
+
 # Menu loop, it will loop until the user choose to enter a server
 while True:
     enter_server()
     break
 
 stop_thread = False
+
 
 def receive():
 
@@ -42,10 +46,10 @@ def receive():
         try:
             message = client.recv(1024).decode()
 
-            if message =="Games has started. Try joining another room or wait till game is finished":
+            if message == "Games has started. Try joining another room or wait till game is finished":
                 print(message)
                 raise socket.error
-            
+
             if message == "Room Full":
                 print(message)
                 raise socket.error
@@ -56,7 +60,7 @@ def receive():
                 # Ask the user to choose a different nickname
 
                 global nickname
-                nickname=""
+                nickname = ""
                 nickname = input("Choose a different nickname:")
 
                 # Retry sending the nickname
@@ -85,24 +89,25 @@ def write():
             if stop_thread:
                 break
             # Getting Messages
-            if nickname!="":
+            if nickname != "":
                 message = f'{nickname}: {input("")}'
 
             if "/leave" in message:
-                    stop_thread = True
-                    client.send(message.encode("ascii"))
-                    print("You left the server.")
-                    client.close()
-                    break
-            
-            if(nickname!=""):
+                stop_thread = True
+                client.send(message.encode("ascii"))
+                print("You left the server.")
+                client.close()
+                break
+
+            if (nickname != ""):
                 client.send(message.encode('ascii'))
 
         except socket.error:
-            stop_thread = True            
+            stop_thread = True
             print('Error Occurred while Sending Message')
             client.close()
             break
+
 
 receive_thread = threading.Thread(target=receive)
 receive_thread.start()
