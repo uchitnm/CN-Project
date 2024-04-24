@@ -1,10 +1,24 @@
+"""
+    Multiplayer BlackJack Game, with chat feature. using Socket Programming and SSL for secure connection.
+    Server Side Code.
+
+    Student Details:
+    Name : U Sanjeev ; SRN : PES1UG22CS660
+    Name : Uchit N M ; SRN : PES1UG22CS661
+
+    Code Description:
+    1) The Server side code is written in python.
+    2) The Server is capable of handling multiple clients.
+    3) The Server is capable of handling multiple games at a time on differnt room(ports).
+"""
+
 import threading
 import socket
 import ssl
 import random
 import colors as c
 
-ip = "192.168.10.212"
+ip = "127.0.0.1"
 port = [49153, 49154, 49155, 49156]
 server_sockets = [ssl.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM), certfile='./server.crt',
                                   keyfile='./server.key', server_side=True, ssl_version=ssl.PROTOCOL_TLS) for _ in range(4)]

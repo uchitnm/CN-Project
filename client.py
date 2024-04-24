@@ -1,3 +1,18 @@
+"""
+    Multiplayer BlackJack Game, with chat feature. using Socket Programming and SSL for secure connection.
+    Client Side Code.
+
+    Student Details:
+    Name : U Sanjeev ; SRN : PES1UG22CS660
+    Name : Uchit N M ; SRN : PES1UG22CS661
+
+    Code Description:
+    This is the client side code, which connects to the server and sends and receives messages.
+    The client can choose the server to connect to and also choose a nickname.
+    The client can perform differnt action by sending diffrent commands.
+"""
+
+
 import socket
 import threading
 import json
