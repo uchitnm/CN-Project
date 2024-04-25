@@ -33,8 +33,14 @@ def enter_server():
     nickname = input("Choose Your Nickname:")
 
     # Store the ip and port number for connection
-    ip = data[server_name]["ip"]
-    port = data[server_name]["port"]
+    try:
+        ip = data[server_name]["ip"]
+        port = data[server_name]["port"]
+    except KeyError:
+        print("Server not found.")
+        print("Please enter a valid server name.")
+        print("+--------------------------------+")
+        enter_server()
 
     global client
 
