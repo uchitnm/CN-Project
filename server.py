@@ -340,4 +340,8 @@ for thread in server_threads:
 
 
 for thread in server_threads:
-    thread.join()
+    try:
+        thread.join()
+    except KeyboardInterrupt:
+        print('Server Stopped.')
+        exit(0)
